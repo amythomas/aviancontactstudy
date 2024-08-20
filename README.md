@@ -1,0 +1,1 @@
+Analyses of questionnaire data collected in the Avian Contact Study, an online survey to gather data on human contact with birds and knowledge of avian influenza to understand avian influenza transmission.
