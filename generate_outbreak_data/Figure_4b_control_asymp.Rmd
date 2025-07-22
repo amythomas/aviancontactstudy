@@ -1,0 +1,386 @@
+---
+title: "fig4c_ct"
+author: "izel"
+date: "2025-04-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+p_trace:0 
+
+```{r warning=FALSE}
+###
+
+trial_0_0_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_0_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_0_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_0_11_500_0 <- combination_function(trial_0_0_11_500_0_20_44, trial_0_0_11_500_0_45_59, trial_0_0_11_500_0_60_plus)
+
+saveRDS(res_0_0_11_500_0, file = file.path(folder_path, "res_0_0_11_500_0.rds"))
+
+###
+
+trial_02_0_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_0_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_0_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_0_11_500_0 <- combination_function(trial_02_0_11_500_0_20_44, trial_02_0_11_500_0_45_59, trial_02_0_11_500_0_60_plus)
+
+saveRDS(res_02_0_11_500_0, file = file.path(folder_path, "res_02_0_11_500_0.rds"))
+
+###
+
+trial_04_0_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_0_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_0_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_0_11_500_0 <- combination_function(trial_04_0_11_500_0_20_44, trial_04_0_11_500_0_45_59, trial_04_0_11_500_0_60_plus)
+
+saveRDS(res_04_0_11_500_0, file = file.path(folder_path, "res_04_0_11_500_0.rds"))
+
+###
+
+trial_06_0_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_0_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_0_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_0_11_500_0 <- combination_function(trial_06_0_11_500_0_20_44, trial_06_0_11_500_0_45_59, trial_06_0_11_500_0_60_plus)
+
+saveRDS(res_06_0_11_500_0, file = file.path(folder_path, "res_06_0_11_500_0.rds"))
+
+###
+
+trial_08_0_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_0_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_0_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_0_11_500_0 <- combination_function(trial_08_0_11_500_0_20_44, trial_08_0_11_500_0_45_59, trial_08_0_11_500_0_60_plus)
+
+saveRDS(res_08_0_11_500_0, file = file.path(folder_path, "res_08_0_11_500_0.rds"))
+
+###
+
+trial_1_0_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_0_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_0_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 0, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_0_11_500_0 <- combination_function(trial_1_0_11_500_0_20_44, trial_1_0_11_500_0_45_59, trial_1_0_11_500_0_60_plus)
+
+saveRDS(res_1_0_11_500_0, file = file.path(folder_path, "res_1_0_11_500_0.rds"))
+```
+
+p_trace: 0.2
+
+```{r warning=FALSE}
+
+
+trial_0_02_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_02_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_02_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_02_11_500_0 <- combination_function(trial_0_02_11_500_0_20_44, trial_0_02_11_500_0_45_59, trial_0_02_11_500_0_60_plus)
+
+saveRDS(res_0_02_11_500_0, file = file.path(folder_path, "res_0_02_11_500_0.rds"))
+
+###
+
+trial_02_02_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_02_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_02_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_02_11_500_0 <- combination_function(trial_02_02_11_500_0_20_44, trial_02_02_11_500_0_45_59, trial_02_02_11_500_0_60_plus)
+
+saveRDS(res_02_02_11_500_0, file = file.path(folder_path, "res_02_02_11_500_0.rds"))
+
+###
+
+trial_04_02_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_02_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_02_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_02_11_500_0 <- combination_function(trial_04_02_11_500_0_20_44, trial_04_02_11_500_0_45_59, trial_04_02_11_500_0_60_plus)
+
+saveRDS(res_04_02_11_500_0, file = file.path(folder_path, "res_04_02_11_500_0.rds"))
+
+###
+
+trial_06_02_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_02_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_02_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_02_11_500_0 <- combination_function(trial_06_02_11_500_0_20_44, trial_06_02_11_500_0_45_59, trial_06_02_11_500_0_60_plus)
+
+saveRDS(res_06_02_11_500_0, file = file.path(folder_path, "res_06_02_11_500_0.rds"))
+
+###
+
+trial_08_02_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_02_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_02_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_02_11_500_0 <- combination_function(trial_08_02_11_500_0_20_44, trial_08_02_11_500_0_45_59, trial_08_02_11_500_0_60_plus)
+
+saveRDS(res_08_02_11_500_0, file = file.path(folder_path, "res_08_02_11_500_0.rds"))
+###
+
+trial_1_02_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_02_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_02_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 0.2, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_02_11_500_0 <- combination_function(trial_1_02_11_500_0_20_44, trial_1_02_11_500_0_45_59, trial_1_02_11_500_0_60_plus)
+saveRDS(res_1_02_11_500_0, file = file.path(folder_path, "res_1_02_11_500_0.rds"))
+```
+
+p_trace:0.4
+
+```{r warning=FALSE}
+
+
+trial_0_04_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_04_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_04_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_04_11_500_0 <- combination_function(trial_0_04_11_500_0_20_44, trial_0_04_11_500_0_45_59, trial_0_04_11_500_0_60_plus)
+
+saveRDS(res_0_04_11_500_0, file = file.path(folder_path, "res_0_04_11_500_0.rds"))
+###
+
+trial_02_04_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_04_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_04_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_04_11_500_0 <- combination_function(trial_02_04_11_500_0_20_44, trial_02_04_11_500_0_45_59, trial_02_04_11_500_0_60_plus)
+
+saveRDS(res_02_04_11_500_0, file = file.path(folder_path, "res_02_04_11_500_0.rds"))
+###
+
+trial_04_04_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_04_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_04_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_04_11_500_0 <- combination_function(trial_04_04_11_500_0_20_44, trial_04_04_11_500_0_45_59, trial_04_04_11_500_0_60_plus)
+
+saveRDS(res_04_04_11_500_0, file = file.path(folder_path, "res_04_04_11_500_0.rds"))
+####
+
+
+
+###
+
+trial_06_04_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_04_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_04_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_04_11_500_0 <- combination_function(trial_06_04_11_500_0_20_44, trial_06_04_11_500_0_45_59, trial_06_04_11_500_0_60_plus)
+
+saveRDS(res_06_04_11_500_0, file = file.path(folder_path, "res_06_04_11_500_0.rds"))
+###
+
+trial_08_04_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_04_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_04_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_04_11_500_0 <- combination_function(trial_08_04_11_500_0_20_44, trial_08_04_11_500_0_45_59, trial_08_04_11_500_0_60_plus)
+
+saveRDS(res_08_04_11_500_0, file = file.path(folder_path, "res_08_04_11_500_0.rds"))
+###
+
+trial_1_04_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_04_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_04_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 0.4, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_04_11_500_0 <- combination_function(trial_1_04_11_500_0_20_44, trial_1_04_11_500_0_45_59, trial_1_04_11_500_0_60_plus)
+
+saveRDS(res_1_04_11_500_0, file = file.path(folder_path, "res_1_04_11_500_0.rds"))
+```
+
+p_trace: 0.6
+
+```{r warning=FALSE}
+
+
+###
+
+trial_0_06_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_06_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_06_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_06_11_500_0 <- combination_function(trial_0_06_11_500_0_20_44, trial_0_06_11_500_0_45_59, trial_0_06_11_500_0_60_plus)
+
+saveRDS(res_0_06_11_500_0, file = file.path(folder_path, "res_0_06_11_500_0.rds"))
+
+###
+
+trial_02_06_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_06_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_06_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_06_11_500_0 <- combination_function(trial_02_06_11_500_0_20_44, trial_02_06_11_500_0_45_59, trial_02_06_11_500_0_60_plus)
+
+saveRDS(res_02_06_11_500_0, file = file.path(folder_path, "res_02_06_11_500_0.rds"))
+
+###
+
+trial_04_06_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_06_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_06_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_06_11_500_0 <- combination_function(trial_04_06_11_500_0_20_44, trial_04_06_11_500_0_45_59, trial_04_06_11_500_0_60_plus)
+
+saveRDS(res_04_06_11_500_0, file = file.path(folder_path, "res_04_06_11_500_0.rds"))
+
+###
+
+trial_06_06_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_06_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_06_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_06_11_500_0 <- combination_function(trial_06_06_11_500_0_20_44, trial_06_06_11_500_0_45_59, trial_06_06_11_500_0_60_plus)
+
+saveRDS(res_06_06_11_500_0, file = file.path(folder_path, "res_06_06_11_500_0.rds"))
+
+###
+
+trial_08_06_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_06_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_06_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_06_11_500_0 <- combination_function(trial_08_06_11_500_0_20_44, trial_08_06_11_500_0_45_59, trial_08_06_11_500_0_60_plus)
+
+saveRDS(res_08_06_11_500_0, file = file.path(folder_path, "res_08_06_11_500_0.rds"))
+
+###
+
+trial_1_06_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_06_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_06_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 0.6, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_06_11_500_0 <- combination_function(trial_1_06_11_500_0_20_44, trial_1_06_11_500_0_45_59, trial_1_06_11_500_0_60_plus)
+
+saveRDS(res_1_06_11_500_0, file = file.path(folder_path, "res_1_06_11_500_0.rds"))
+```
+
+p_trace: 0.8
+
+```{r warning=FALSE}
+###
+
+trial_0_08_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_08_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_08_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_08_11_500_0 <- combination_function(trial_0_08_11_500_0_20_44, trial_0_08_11_500_0_45_59, trial_0_08_11_500_0_60_plus)
+
+saveRDS(res_0_08_11_500_0, file = file.path(folder_path, "res_0_08_11_500_0.rds"))
+###
+
+trial_02_08_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_08_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_08_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_08_11_500_0 <- combination_function(trial_02_08_11_500_0_20_44, trial_02_08_11_500_0_45_59, trial_02_08_11_500_0_60_plus)
+
+saveRDS(res_02_08_11_500_0, file = file.path(folder_path, "res_02_08_11_500_0.rds"))
+###
+
+trial_04_08_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_08_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_08_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_08_11_500_0 <- combination_function(trial_04_08_11_500_0_20_44, trial_04_08_11_500_0_45_59, trial_04_08_11_500_0_60_plus)
+
+saveRDS(res_04_08_11_500_0, file = file.path(folder_path, "res_04_08_11_500_0.rds"))
+###
+
+trial_06_08_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_08_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_08_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_08_11_500_0 <- combination_function(trial_06_08_11_500_0_20_44, trial_06_08_11_500_0_45_59, trial_06_08_11_500_0_60_plus)
+
+saveRDS(res_06_08_11_500_0, file = file.path(folder_path, "res_06_08_11_500_0.rds"))
+
+###
+
+trial_08_08_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_08_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_08_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_08_11_500_0 <- combination_function(trial_08_08_11_500_0_20_44, trial_08_08_11_500_0_45_59, trial_08_08_11_500_0_60_plus)
+
+saveRDS(res_08_08_11_500_0, file = file.path(folder_path, "res_08_08_11_500_0.rds"))
+
+###
+
+trial_1_08_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_08_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_08_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 0.8, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_08_11_500_0 <- combination_function(trial_1_08_11_500_0_20_44, trial_1_08_11_500_0_45_59, trial_1_08_11_500_0_60_plus)
+
+saveRDS(res_1_08_11_500_0, file = file.path(folder_path, "res_1_08_11_500_0.rds"))
+```
+
+p_trace: 1
+
+```{r warning=FALSE}
+###
+
+trial_0_1_11_500_0_20_44 <- function_age(p_asym = 0, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_0_1_11_500_0_45_59 <- function_age(p_asym = 0, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_0_1_11_500_0_60_plus <- function_age(p_asym = 0, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_0_1_11_500_0 <- combination_function(trial_0_1_11_500_0_20_44, trial_0_1_11_500_0_45_59, trial_0_1_11_500_0_60_plus)
+
+saveRDS(res_0_1_11_500_0, file = file.path(folder_path, "res_0_1_11_500_0.rds"))
+###
+
+trial_02_1_11_500_0_20_44 <- function_age(p_asym = 0.2, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_02_1_11_500_0_45_59 <- function_age(p_asym = 0.2, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_02_1_11_500_0_60_plus <- function_age(p_asym = 0.2, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_02_1_11_500_0 <- combination_function(trial_02_1_11_500_0_20_44, trial_02_1_11_500_0_45_59, trial_02_1_11_500_0_60_plus)
+
+saveRDS(res_02_1_11_500_0, file = file.path(folder_path, "res_02_1_11_500_0.rds"))
+###
+
+trial_04_1_11_500_0_20_44 <- function_age(p_asym = 0.4, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_04_1_11_500_0_45_59 <- function_age(p_asym = 0.4, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_04_1_11_500_0_60_plus <- function_age(p_asym = 0.4, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_04_1_11_500_0 <- combination_function(trial_04_1_11_500_0_20_44, trial_04_1_11_500_0_45_59, trial_04_1_11_500_0_60_plus)
+
+saveRDS(res_04_1_11_500_0, file = file.path(folder_path, "res_04_1_11_500_0.rds"))
+
+###
+
+trial_06_1_11_500_0_20_44 <- function_age(p_asym = 0.6, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_06_1_11_500_0_45_59 <- function_age(p_asym = 0.6, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_06_1_11_500_0_60_plus <- function_age(p_asym = 0.6, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_06_1_11_500_0 <- combination_function(trial_06_1_11_500_0_20_44, trial_06_1_11_500_0_45_59, trial_06_1_11_500_0_60_plus)
+
+saveRDS(res_06_1_11_500_0, file = file.path(folder_path, "res_06_1_11_500_0.rds"))
+###
+
+trial_08_1_11_500_0_20_44 <- function_age(p_asym = 0.8, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_08_1_11_500_0_45_59 <- function_age(p_asym = 0.8, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_08_1_11_500_0_60_plus <- function_age(p_asym = 0.8, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_08_1_11_500_0 <- combination_function(trial_08_1_11_500_0_20_44, trial_08_1_11_500_0_45_59, trial_08_1_11_500_0_60_plus)
+
+saveRDS(res_08_1_11_500_0, file = file.path(folder_path, "res_08_1_11_500_0.rds"))
+###
+
+trial_1_1_11_500_0_20_44 <- function_age(p_asym = 1, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "20-44", p_isolate = 0)
+trial_1_1_11_500_0_45_59 <- function_age(p_asym = 1, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "45-59", p_isolate = 0)
+trial_1_1_11_500_0_60_plus <- function_age(p_asym = 1, p_trace = 1, R_0 = 1.1, time_isolation = 500, index_age_group = "60+", p_isolate = 0)
+
+res_1_1_11_500_0 <- combination_function(trial_1_1_11_500_0_20_44, trial_1_1_11_500_0_45_59, trial_1_1_11_500_0_60_plus)
+
+saveRDS(res_1_1_11_500_0, file = file.path(folder_path, "res_1_1_11_500_0.rds"))
+```
