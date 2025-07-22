@@ -1,0 +1,512 @@
+---
+title: "fig7_8"
+author: "izel"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This code generates Figure 7 and 8 (Supplementary Figures)
+
+# Load packages
+
+```{r warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork) # combine plots with arithmetic operations
+library(reshape2)
+```
+
+# S3 Fig (outbreak size by the age group of index case)
+
+# outbreak size across all age groups
+
+```{r}
+outbreak_size_no_control <- function(data_list, p_asym) {
+  
+  outbreak_size_no_control <- list()
+  
+  for (i in 1:length(data_list)) {
+    
+    outbreak_size_no_control[[i]] <- data_list[[i]][[3]] %>%
+      mutate(cases_grp = case_when(cases_with_control >= 0 & cases_with_control < 1 ~ "[0]",
+                                   cases_with_control >= 1 & cases_with_control < 2 ~ "[1]",
+                                   cases_with_control >= 2 & cases_with_control < 5 ~ "[2, 4]",
+                                   cases_with_control >= 5 & cases_with_control < 10 ~ "[5, 9]",
+                                   cases_with_control >= 10 & cases_with_control < 20 ~ "[10, 19]",
+                                   cases_with_control >= 20 & cases_with_control < 50 ~ "[20, 49]",
+                                   cases_with_control >= 50  ~ "[>=50]"))
+  }
+  
+  outbreak_grp_no_control <- list()
+  
+  for (i in 1:length(outbreak_size_no_control)) {
+    
+    outbreak_grp_no_control[[i]] <- outbreak_size_no_control[[i]] %>%
+      group_by(cases_grp) %>%
+      tally() %>%
+      ungroup()
+  }
+  
+  for (i in 1:length(outbreak_grp_no_control)) {
+    outbreak_grp_no_control[[i]] <- outbreak_grp_no_control[[i]] %>%
+      mutate(prop = n/sum(n))
+    
+  }
+  
+  outbreak_grp_no_control[[1]]$R_0 <- 0
+  outbreak_grp_no_control[[2]]$R_0 <- 0.1
+  outbreak_grp_no_control[[3]]$R_0 <- 0.2
+  outbreak_grp_no_control[[4]]$R_0 <- 0.3
+  outbreak_grp_no_control[[5]]$R_0 <- 0.4
+  outbreak_grp_no_control[[6]]$R_0 <- 0.5
+  outbreak_grp_no_control[[7]]$R_0 <- 0.6
+  outbreak_grp_no_control[[8]]$R_0 <- 0.7
+  outbreak_grp_no_control[[9]]$R_0 <- 0.8
+  outbreak_grp_no_control[[10]]$R_0 <- 0.9
+  outbreak_grp_no_control[[11]]$R_0 <- 1
+  outbreak_grp_no_control[[12]]$R_0 <- 1.1
+  
+  outbreak_no_control_df <- do.call(rbind, outbreak_grp_no_control)
+  
+  outbreak_no_control_df$cases_grp <- factor(outbreak_no_control_df$cases_grp, levels = c("[0]", "[1]",
+                                                                                    "[2, 4]", "[5, 9]",
+                                                                                    "[10, 19]", "[20, 49]",
+                                                                                    "[>=50]"))
+  
+  plot <- ggplot(outbreak_no_control_df, aes(x = factor(R_0), y = prop, fill = cases_grp)) +
+    geom_bar(stat = "identity") +
+    labs(x = expression(R[0]), y = "Proportion of simulation", 
+         title = "Across all age groups", fill = "Outbreak size \n(excluding index case)") +
+    scale_fill_manual(values = c("[0]" = "red",
+                                 "[1]" = "orange",
+                                 "[2, 4]" = "yellow",
+                                 "[5, 9]" = "lightgreen",
+                                 "[10, 19]" = "green",
+                                 "[20, 49]" = "blue",
+                                 "[>=50]" = "purple")) +
+    theme_minimal() +
+    theme(title = element_text(size = 8),
+          axis.title.y = element_text(size = 10),
+        legend.title = element_text(size = 10),
+        legend.box.margin = margin(0, 0, 0, -10),
+        legend.text = element_text(size = 9),
+        legend.key.size = unit(0.8, "lines")) +
+    theme(plot.background = element_rect(fill = "white", colour = NA))
+  
+  return(list(plot = plot, outbreak_no_control_df = outbreak_no_control_df, outbreak_grp_no_control = outbreak_grp_no_control, outbreak_size_no_control = outbreak_size_no_control))
+}
+```
+
+```{r}
+list_4a_no_control <- list(res_04_0_0_500_0, res_04_0_01_500_0, res_04_0_02_500_0, res_04_0_03_500_0, res_04_0_04_500_0, res_04_0_05_500_0, res_04_0_06_500_0, res_04_0_07_500_0, res_04_0_08_500_0, res_04_0_09_500_0, res_04_0_1_500_0, res_04_0_11_500_0)
+```
+
+Figure 4a: no control
+
+```{r}
+fig_all_age <- outbreak_size_no_control(list_4a_no_control, 0.4)$plot
+```
+
+# age-specific outbreak size
+
+Data preparation for plotting
+
+```{r}
+list_no_control <- list(res_04_0_0_500_0, res_04_0_01_500_0, res_04_0_02_500_0, res_04_0_03_500_0, res_04_0_04_500_0,
+                    res_04_0_05_500_0, res_04_0_06_500_0, res_04_0_07_500_0, res_04_0_08_500_0, res_04_0_09_500_0, res_04_0_1_500_0,
+                    res_04_0_11_500_0)
+
+outcome_list <- list()
+
+for (data in 1:length(list_no_control)) {
+  
+  outbreak_size_age <- list_no_control[[data]][[2]][, c(1:3)]
+  
+  outbreak_size_age <- outbreak_size_age %>%
+    mutate(sec_cases_grp = case_when(secondary_cases >= 0 & secondary_cases < 1 ~ "[0]",
+                                   secondary_cases >= 1 & secondary_cases < 2 ~ "[1]",
+                                   secondary_cases >= 2 & secondary_cases < 5 ~ "[2, 4]",
+                                   secondary_cases >= 5 & secondary_cases < 10 ~ "[5, 9]",
+                                   secondary_cases >= 10 & secondary_cases < 20 ~ "[10, 19]",
+                                   secondary_cases >= 20 & secondary_cases < 50 ~ "[20, 49]",
+                                   secondary_cases >= 50  ~ "[>=50]"))
+  
+  outbreak_size_age <- outbreak_size_age %>%
+    group_by(age_index_case, sec_cases_grp) %>%
+    tally() %>%
+    ungroup()
+  
+  
+  levels <- c("[0]", "[1]", "[2, 4]", "[5, 9]", "[10, 19]", "[20, 49]", "[>=50]")
+
+  outbreak_size_age <- outbreak_size_age %>%
+    complete(age_index_case, sec_cases_grp = levels, fill = list(n = 0))
+  
+  for (i in 1:length(outbreak_size_age$age_index_case)) {
+  
+    if (i <= 7) {outbreak_size_age$prop[i] <- outbreak_size_age$n[i]/sum(outbreak_size_age$n[1:7])}
+    else if (i <= 14) {outbreak_size_age$prop[i] <- outbreak_size_age$n[i]/sum(outbreak_size_age$n[8:14])}
+    else if (i <= 21) {outbreak_size_age$prop[i] <- outbreak_size_age$n[i]/sum(outbreak_size_age$n[15:21])}
+    else {outbreak_size_age$prop[i] <- outbreak_size_age$n[i]/sum(outbreak_size_age$n[22:28])}
+  
+  }
+
+  outcome_list[[data]] <- outbreak_size_age
+  
+}
+
+outcome_list[[1]]$R <- 0
+outcome_list[[2]]$R <- 0.1
+outcome_list[[3]]$R <- 0.2
+outcome_list[[4]]$R <- 0.3
+outcome_list[[5]]$R <- 0.4
+outcome_list[[6]]$R <- 0.5
+outcome_list[[7]]$R <- 0.6
+outcome_list[[8]]$R <- 0.7
+outcome_list[[9]]$R <- 0.8
+outcome_list[[10]]$R <- 0.9
+outcome_list[[11]]$R <- 1
+outcome_list[[12]]$R <- 1.1
+
+size_age_R <- rbind(outcome_list[[1]], outcome_list[[2]], outcome_list[[3]], outcome_list[[4]],
+                    outcome_list[[5]], outcome_list[[6]], outcome_list[[7]], outcome_list[[8]],
+                    outcome_list[[9]], outcome_list[[10]], outcome_list[[11]], outcome_list[[12]])
+
+```
+
+Generate plots
+
+```{r}
+size_age_R_20_44 <- size_age_R %>%
+  filter(age_index_case == "20-44")
+
+levels <- c("[0]", "[1]", "[2, 4]", "[5, 9]", "[10, 19]", "[20, 49]", "[>=50]")
+  
+size_age_R_20_44$sec_cases_grp <- factor(size_age_R_20_44$sec_cases_grp, levels = levels)
+
+x_vals <- as.character(seq(0, 1.1, 0.1))
+positions <- rep(c(-0.03, -0.075), length.out = length(x_vals))  # y-offset for label placement
+
+label_df <- data.frame(
+  R = x_vals,
+  prop = positions
+)
+
+
+plot_20_44_base <- ggplot() +
+  geom_bar(data = size_age_R_20_44, aes(x = factor(R), y = prop, fill = sec_cases_grp), stat = "identity") +
+  labs(x = expression(R[0]), y = "Proportion of simulations", title = "Age group index: 19-44",
+       fill = "number of cases") +
+  scale_fill_manual(values = c("[0]" = "red",
+                                 "[1]" = "orange",
+                                 "[2, 4]" = "yellow",
+                                 "[5, 9]" = "lightgreen",
+                                 "[10, 19]" = "green",
+                                 "[20, 49]" = "blue",
+                                 "[>=50]" = "purple")) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  theme_minimal()+
+  theme(legend.position = "none") + 
+  theme(title = element_text(size = 8),
+        axis.title.y = element_text(size = 10),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8)) +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+plot_20_44 <- plot_20_44_base +
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.8,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+
+###
+
+size_age_R_45_59 <- size_age_R %>%
+  filter(age_index_case == "45-59")
+
+levels <- c("[0]", "[1]", "[2, 4]", "[5, 9]", "[10, 19]", "[20, 49]", "[>=50]")
+  
+size_age_R_45_59$sec_cases_grp <- factor(size_age_R_45_59$sec_cases_grp, levels = levels)
+
+plot_45_59_base <- ggplot() +
+  geom_bar(data = size_age_R_45_59, aes(x = factor(R), y = prop, fill = sec_cases_grp), stat = "identity") +
+  labs(x = expression(R[0]), y = "", title = "Age group index: 45-59",
+       fill = "number of cases") +
+  scale_fill_manual(values = c("[0]" = "red",
+                                 "[1]" = "orange",
+                                 "[2, 4]" = "yellow",
+                                 "[5, 9]" = "lightgreen",
+                                 "[10, 19]" = "green",
+                                 "[20, 49]" = "blue",
+                                 "[>=50]" = "purple")) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  theme_minimal()+
+  theme(legend.position = "none") + 
+  theme(title = element_text(size = 8),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8))  +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+plot_45_59 <- plot_45_59_base +
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.8,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+
+###
+
+size_age_R_60_plus <- size_age_R %>%
+  filter(age_index_case == "60+")
+
+levels <- c("[0]", "[1]", "[2, 4]", "[5, 9]", "[10, 19]", "[20, 49]", "[>=50]")
+  
+size_age_R_60_plus$sec_cases_grp <- factor(size_age_R_60_plus$sec_cases_grp, levels = levels)
+
+plot_60_plus_base <- ggplot() +
+  geom_bar(data = size_age_R_60_plus, aes(x = factor(R), y = prop, fill = sec_cases_grp), stat = "identity") +
+  labs(x = expression(R[0]), y = "", title = "Age group index: 60+",
+       fill = "Outbreak size \n(excluding index case)") +
+  scale_fill_manual(values = c("[0]" = "red",
+                                 "[1]" = "orange",
+                                 "[2, 4]" = "yellow",
+                                 "[5, 9]" = "lightgreen",
+                                 "[10, 19]" = "green",
+                                 "[20, 49]" = "blue",
+                                 "[>=50]" = "purple")) +
+  scale_y_continuous(breaks = seq(0, 1, 0.25)) +
+  theme_minimal() + 
+  theme(legend.position = "none") +
+  theme(title = element_text(size = 8),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8))  +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+plot_60_plus <- plot_60_plus_base +
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.8,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+
+```
+
+Figure 7
+
+```{r}
+fig_7 <- plot_20_44 + plot_45_59 + plot_60_plus
+```
+
+```{r}
+sfig_3 <- ggarrange(fig_all_age, fig_7,
+                    labels = c("A", "B"),
+                    ncol = 1,
+                    heights = c(1.5, 1.5))
+```
+
+```{r}
+ggsave("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/Figure_formatted/SFig_3.tiff", sfig_3, dpi = 300, width = 7.5, height = 4.8, units = "in", device = "tiff", compression = "lzw")
+```
+
+# Figure 8 (age distribution of cases)
+
+Data preparation for plotting
+
+Add R column to indicate R_0
+
+```{r}
+res_04_0_0_500_0[[2]]$R <- 0
+res_04_0_01_500_0[[2]]$R <- 0.1
+res_04_0_02_500_0[[2]]$R <- 0.2
+res_04_0_03_500_0[[2]]$R <- 0.3
+res_04_0_04_500_0[[2]]$R <- 0.4
+res_04_0_05_500_0[[2]]$R <- 0.5
+res_04_0_06_500_0[[2]]$R <- 0.6
+res_04_0_07_500_0[[2]]$R <- 0.7
+res_04_0_08_500_0[[2]]$R <- 0.8
+res_04_0_09_500_0[[2]]$R <- 0.9
+res_04_0_1_500_0[[2]]$R <- 1
+res_04_0_11_500_0[[2]]$R <- 1.1
+```
+
+Create the data frame for plotting
+
+```{r}
+list_no_control <- list(res_04_0_0_500_0, res_04_0_01_500_0, res_04_0_02_500_0, res_04_0_03_500_0,
+                        res_04_0_04_500_0, res_04_0_05_500_0, res_04_0_06_500_0, res_04_0_07_500_0,
+                        res_04_0_08_500_0, res_04_0_09_500_0, res_04_0_1_500_0, res_04_0_11_500_0)
+
+final_list <- list()
+
+age_grp_index <- c("20-44", "45-59", "60+")
+
+for (i in 1:length(list_no_control)) {
+  
+  data <- list_no_control[[i]][[2]]
+  r_0 <- unique(data$R)
+  
+  for (age in age_grp_index) {
+    
+   data_age <- data %>%
+     filter(age_index_case == age)
+   
+   data_clean <- data_age %>%
+     filter(secondary_cases != 0)
+   
+   if (nrow(data_clean) == 0) {
+     next
+   }
+   
+   data_clean$prop_0_19 <- data_clean$sec_cases_0_19 / data_clean$secondary_cases
+   data_clean$prop_20_44 <- data_clean$sec_cases_20_44 / data_clean$secondary_cases
+   data_clean$prop_45_59 <- data_clean$sec_cases_45_59 / data_clean$secondary_cases
+   data_clean$prop_60_plus <- data_clean$sec_cases_60_plus / data_clean$secondary_cases
+   
+   df_age <- data.frame("R_0" = rep(r_0, 4),
+                        "age_group_index" = rep(age, 4),
+                        "age_group_cases" = c("0-19", "20-44", "45-59", "60+"),
+                        "mean_prop" = c(mean(data_clean$prop_0_19), mean(data_clean$prop_20_44),
+                                        mean(data_clean$prop_45_59), mean(data_clean$prop_60_plus)))
+  
+   final_list[[length(final_list) + 1]] <- df_age
+   
+  }
+}
+
+df_temp_0 <- data.frame("R_0" = rep(0, 12),
+                      "age_group_index" = c("20-44", "20-44", "20-44", "20-44",
+                                            "45-59", "45-59", "45-59", "45-59",
+                                            "60+", "60+", "60+", "60+"),
+                      "age_group_cases" = c("0-19", "20-44", "45-59", "60+", "0-19", "20-44", "45-59", "60+", "0-19", "20-44", "45-59", "60+"),
+                      "mean_prop" = rep(0, 12)
+                      )
+
+df_temp_01 <- data.frame("R_0" = rep(0.1, 12),
+                      "age_group_index" = c("20-44", "20-44", "20-44", "20-44",
+                                            "45-59", "45-59", "45-59", "45-59",
+                                            "60+", "60+", "60+", "60+"),
+                      "age_group_cases" = c("0-19", "20-44", "45-59", "60+", "0-19", "20-44", "45-59", "60+", "0-19", "20-44", "45-59", "60+"),
+                      "mean_prop" = rep(0, 12)
+                      )
+
+df_temp <- rbind(df_temp_0, df_temp_01)
+
+final_list[[1]] <- rbind(df_temp, final_list[[1]])
+
+
+final_data <- do.call(rbind, final_list)
+
+final_data <- final_data %>% mutate(age_group_cases = case_when(
+  age_group_cases == "0-19" ~ "0-18",
+  age_group_cases == "20-44" ~ "19-44",
+  age_group_cases == "45-59" ~ "45-59",
+  age_group_cases == "60+" ~ "60+",
+))
+```
+
+Filter the final dataset by age group of the index case
+
+```{r}
+final_data_20_44 <- final_data %>%
+  filter(age_group_index == "20-44")
+
+age_dist_20_44_base <- ggplot(final_data_20_44, aes(x = factor(R_0), y = mean_prop, fill = age_group_cases)) +
+  geom_bar(stat = "identity") +
+  labs(x = expression(R[0]), y = "Proportion of the cases",
+       title = "Age index case: 19-44",
+       fill = "age group of the cases") +
+  theme_minimal()+
+  theme(legend.position = "none")  +
+  theme(title = element_text(size = 8),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8))  +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+age_dist_20_44 <- age_dist_20_44_base +
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.5,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+
+final_data_45_59 <- final_data %>%
+  filter(age_group_index == "45-59")
+
+age_dist_45_59_base <- ggplot(final_data_45_59, aes(x = factor(R_0), y = mean_prop, fill = age_group_cases)) +
+  geom_bar(stat = "identity") +
+  labs(x = expression(R[0]), y = "",
+       title = "Age index case: 45-59",
+       fill = "age group of the cases") +
+  theme_minimal()+
+  theme(legend.position = "none")  +
+  theme(title = element_text(size = 8),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8))  +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+age_dist_45_59 <- age_dist_45_59_base +
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.5,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+
+final_data_60_plus <- final_data %>%
+  filter(age_group_index == "60+")
+
+age_dist_60_plus_base <- ggplot(final_data_60_plus, aes(x = factor(R_0), y = mean_prop, fill = age_group_cases)) +
+  geom_bar(stat = "identity") +
+  labs(x = expression(R[0]), y = "Proportion of the cases",
+       title = "Age index case: 60+",
+       fill = "Age group of the cases") +
+  theme_minimal() +
+  theme(title = element_text(size = 8),
+        legend.title = element_text(size = 10),
+        legend.box.margin = margin(0, 0, 0, -10),
+        legend.text = element_text(size = 9),
+        legend.key.size = unit(0.8, "lines"),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 8))  +
+  coord_cartesian(ylim = c(0, 1), clip = "off")
+
+age_dist_60_plus <- age_dist_60_plus_base+
+  geom_text(data = label_df,
+            aes(x = R, y = prop, label = R),
+            size = 2.5,
+            inherit.aes = FALSE) + 
+  theme(
+  axis.title.x = element_text(size = 10, margin = margin(t = 10))
+)
+```
+
+Figure 8
+
+```{r}
+fig_8 <- age_dist_20_44 + age_dist_45_59 + age_dist_60_plus
+```
+
+```{r}
+ggsave("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/Figure_formatted/SFig_4.tiff", fig_8, dpi = 300, width = 7.5, height = 3.8, units = "in", device = "tiff", compression = "lzw")
+```

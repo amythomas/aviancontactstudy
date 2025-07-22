@@ -1,0 +1,320 @@
+---
+title: "Figure_4(updated_v2)"
+author: "izel"
+date: "2025-07-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This code generates figure 4.
+
+# Load packages
+
+```{r warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork) # combine plots with arithmetic operations
+library(reshape2)
+library(ggpubr)
+library(DescTools)
+```
+
+# Figure 4
+
+## a (outbreak size)
+
+# No control
+
+```{r}
+df_box_plot <- data.frame("R" = c(rep(0, 9000), rep(0.1, 9000), rep(0.2, 9000),
+                                  rep(0.3, 9000), rep(0.4, 9000), rep(0.5, 9000),
+                                  rep(0.6, 9000), rep(0.7, 9000), rep(0.8, 9000),
+                                  rep(0.9, 9000), rep(1, 9000), rep(1.1, 9000)))
+
+
+outbreak_size = c(res_04_0_0_500_0[[3]]$cases_without_control, res_04_0_01_500_0[[3]]$cases_without_control, res_04_0_02_500_0[[3]]$cases_without_control, res_04_0_03_500_0[[3]]$cases_without_control, res_04_0_04_500_0[[3]]$cases_without_control,
+                      res_04_0_05_500_0[[3]]$cases_without_control, res_04_0_06_500_0[[3]]$cases_without_control, res_04_0_07_500_0[[3]]$cases_without_control, res_04_0_08_500_0[[3]]$cases_without_control, res_04_0_09_500_0[[3]]$cases_without_control,
+                      res_04_0_1_500_0[[3]]$cases_without_control, res_04_0_11_500_0[[3]]$cases_without_control)
+
+df_box_plot$outbreak_size = outbreak_size + 1
+```
+
+```{r}
+# calculate mean with confidence interval
+df_stats <- df_box_plot %>%
+  group_by(R) %>%
+  summarise(
+    mean_outbreak = mean(outbreak_size),
+    lower_ci = quantile(outbreak_size, 0.025),
+    upper_ci = quantile(outbreak_size, 0.975)
+  )
+
+no_control <- ggplot() +
+  geom_boxplot(data = df_box_plot, aes(x = factor(R), y = outbreak_size)) +
+  geom_line(data = df_stats, aes(x = factor(R), y = mean_outbreak, group = 1, colour = "Mean")) +
+  geom_ribbon(data = df_stats, aes(x = as.numeric(factor(R)),ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.2, fill = "orange") +
+  scale_y_log10(name = "Outbreak size (log scale)", breaks = c(1, 10, 100, 1000, 10000),
+  limits = c(1, 10000)) +
+  scale_x_discrete(name = expression(R[0])) +
+  scale_colour_manual(values = c("Mean" = "orange")) +
+  labs(title = "No control") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 10))
+ 
+```
+
+# Contact tracing only
+
+```{r}
+df_box_plot_ct <- data.frame("R" = c(rep(0, 9000), rep(0.1, 9000), rep(0.2, 9000),
+                                  rep(0.3, 9000), rep(0.4, 9000), rep(0.5, 9000),
+                                  rep(0.6, 9000), rep(0.7, 9000), rep(0.8, 9000),
+                                  rep(0.9, 9000), rep(1, 9000), rep(1.1, 9000)))
+
+
+outbreak_size_ct = c(res_04_04_0_500_0[[3]]$cases_with_control, res_04_04_01_500_0[[3]]$cases_with_control, res_04_04_02_500_0[[3]]$cases_with_control, res_04_04_03_500_0[[3]]$cases_with_control, res_04_04_04_500_0[[3]]$cases_with_control,
+                      res_04_04_05_500_0[[3]]$cases_with_control, res_04_04_06_500_0[[3]]$cases_with_control, res_04_04_07_500_0[[3]]$cases_with_control, res_04_04_08_500_0[[3]]$cases_with_control, res_04_04_09_500_0[[3]]$cases_with_control,
+                      res_04_0_1_500_0[[3]]$cases_with_control, res_04_04_11_500_0[[3]]$cases_with_control)
+
+
+df_box_plot_ct$outbreak_size = outbreak_size_ct +1
+
+
+```
+
+```{r}
+df_stats_ct <- df_box_plot_ct %>%
+  group_by(R) %>%
+  summarise(
+    mean_outbreak = mean(outbreak_size),
+    lower_ci = quantile(outbreak_size, 0.025),
+    upper_ci = quantile(outbreak_size, 0.975)
+  )
+
+ct <- ggplot() +
+  geom_boxplot(data = df_box_plot_ct, aes(x = factor(R), y = outbreak_size)) +
+  geom_line(data = df_stats_ct, aes(x = factor(R), y = mean_outbreak, group = 1, colour = "Mean")) +
+  geom_ribbon(data = df_stats_ct, aes(x = as.numeric(factor(R)),ymin = lower_ci, ymax = upper_ci), 
+              alpha = 0.2, fill = "orange") +
+  scale_y_log10(name = "", breaks = c(1, 10, 100, 1000, 10000),
+  limits = c(1, 10000)) +
+  scale_x_discrete(name = expression(R[0])) +
+  scale_colour_manual(values = c("Mean" = "orange")) +
+  labs(title = "Control (contact tracing and self-isolation)") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  theme(plot.title = element_text(size = 10)) 
+```
+
+```{r}
+fig_4a <- no_control + ct
+```
+
+## c (average number of prevented cases with varying proportion of asymptomatic infections)
+
+Contact tracing only
+
+```{r}
+res_0_0_11_500_0[[3]]$p_asym <- 0
+res_0_0_11_500_0[[3]]$p_trace <- 0
+
+res_0_02_11_500_0[[3]]$p_asym <- 0
+res_0_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_0_04_11_500_0[[3]]$p_asym <- 0
+res_0_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_0_06_11_500_0[[3]]$p_asym <- 0
+res_0_06_11_500_0[[3]]$p_trace <- 0.6 
+
+res_0_08_11_500_0[[3]]$p_asym <- 0
+res_0_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_0_1_11_500_0[[3]]$p_asym <- 0
+res_0_1_11_500_0[[3]]$p_trace <- 1
+     
+                      
+res_02_0_11_500_0[[3]]$p_asym <- 0.2
+res_02_0_11_500_0[[3]]$p_trace <- 0
+
+res_02_02_11_500_0[[3]]$p_asym <- 0.2 
+res_02_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_02_04_11_500_0[[3]]$p_asym <- 0.2 
+res_02_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_02_06_11_500_0[[3]]$p_asym <- 0.2 
+res_02_06_11_500_0[[3]]$p_trace <- 0.6
+
+res_02_08_11_500_0[[3]]$p_asym <- 0.2
+res_02_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_02_1_11_500_0[[3]]$p_asym <- 0.2
+res_02_1_11_500_0[[3]]$p_trace <- 1   
+
+
+res_04_0_11_500_0[[3]]$p_asym <- 0.4
+res_04_0_11_500_0[[3]]$p_trace <- 0
+
+
+res_04_02_11_500_0[[3]]$p_asym <- 0.4
+res_04_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_04_04_11_500_0[[3]]$p_asym <- 0.4
+res_04_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_04_06_11_500_0[[3]]$p_asym <- 0.4 
+res_04_06_11_500_0[[3]]$p_trace <- 0.6
+
+res_04_08_11_500_0[[3]]$p_asym <- 0.4
+res_04_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_04_1_11_500_0[[3]]$p_asym <- 0.4
+res_04_1_11_500_0[[3]]$p_trace <- 1
+        
+
+res_06_0_11_500_0[[3]]$p_asym <- 0.6
+res_06_0_11_500_0[[3]]$p_trace <- 0
+
+res_06_02_11_500_0[[3]]$p_asym <- 0.6
+res_06_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_06_04_11_500_0[[3]]$p_asym <- 0.6
+res_06_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_06_06_11_500_0[[3]]$p_asym <- 0.6
+res_06_06_11_500_0[[3]]$p_trace <- 0.6
+
+res_06_08_11_500_0[[3]]$p_asym <- 0.6
+res_06_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_06_1_11_500_0[[3]]$p_asym <- 0.6
+res_06_1_11_500_0[[3]]$p_trace <- 1
+
+                           
+res_08_0_11_500_0[[3]]$p_asym <- 0.8
+res_08_0_11_500_0[[3]]$p_trace <- 0
+
+res_08_02_11_500_0[[3]]$p_asym <- 0.8
+res_08_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_08_04_11_500_0[[3]]$p_asym <- 0.8
+res_08_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_08_06_11_500_0[[3]]$p_asym <- 0.8
+res_08_06_11_500_0[[3]]$p_trace <- 0.6
+
+res_08_08_11_500_0[[3]]$p_asym <- 0.8
+res_08_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_08_1_11_500_0[[3]]$p_asym <- 0.8
+res_08_1_11_500_0[[3]]$p_trace <- 1
+
+                  
+res_1_0_11_500_0[[3]]$p_asym <- 1
+res_1_0_11_500_0[[3]]$p_trace <- 0
+
+res_1_02_11_500_0[[3]]$p_asym <- 1
+res_1_02_11_500_0[[3]]$p_trace <- 0.2
+
+res_1_04_11_500_0[[3]]$p_asym <- 1
+res_1_04_11_500_0[[3]]$p_trace <- 0.4
+
+res_1_06_11_500_0[[3]]$p_asym <- 1
+res_1_06_11_500_0[[3]]$p_trace <- 0.6
+
+res_1_08_11_500_0[[3]]$p_asym <- 1
+res_1_08_11_500_0[[3]]$p_trace <- 0.8
+
+res_1_1_11_500_0[[3]]$p_asym <- 1
+res_1_1_11_500_0[[3]]$p_trace <- 1
+
+```
+
+Create data list
+
+```{r}
+list_4c_ct <- list(res_0_0_11_500_0[[3]], res_0_02_11_500_0[[3]], res_0_04_11_500_0[[3]], res_0_06_11_500_0[[3]], res_0_08_11_500_0[[3]], res_0_1_11_500_0[[3]],
+                           res_02_0_11_500_0[[3]], res_02_02_11_500_0[[3]], res_02_04_11_500_0[[3]], res_02_06_11_500_0[[3]], res_02_08_11_500_0[[3]], res_02_1_11_500_0[[3]],
+                           res_04_0_11_500_0[[3]], res_04_02_11_500_0[[3]], res_04_04_11_500_0[[3]], res_04_06_11_500_0[[3]], res_04_08_11_500_0[[3]], res_04_1_11_500_0[[3]],
+                           res_06_0_11_500_0[[3]], res_06_02_11_500_0[[3]], res_06_04_11_500_0[[3]], res_06_06_11_500_0[[3]], res_06_08_11_500_0[[3]], res_06_1_11_500_0[[3]],
+                           res_08_0_11_500_0[[3]], res_08_02_11_500_0[[3]], res_08_04_11_500_0[[3]], res_08_06_11_500_0[[3]], res_08_08_11_500_0[[3]], res_08_1_11_500_0[[3]],
+                           res_1_0_11_500_0[[3]], res_1_02_11_500_0[[3]], res_1_04_11_500_0[[3]], res_1_06_11_500_0[[3]], res_1_08_11_500_0[[3]], res_1_1_11_500_0[[3]])
+
+```
+
+Create data frame for plotting
+
+```{r}
+data_4c_ct <- data.frame("p_asym" = c(0, 0, 0, 0, 0, 0, 
+                                         0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                                         0.4, 0.4, 0.4, 0.4, 0.4, 0.4,
+                                         0.6, 0.6, 0.6, 0.6, 0.6, 0.6,
+                                         0.8, 0.8, 0.8, 0.8, 0.8, 0.8,
+                                         1, 1, 1, 1, 1, 1),
+                              
+                              "p_trace" = c(0, 0.2, 0.4, 0.6, 0.8, 1,
+                                             0, 0.2, 0.4, 0.6, 0.8, 1,
+                                             0, 0.2, 0.4, 0.6, 0.8, 1,
+                                             0, 0.2, 0.4, 0.6, 0.8, 1,
+                                             0, 0.2, 0.4, 0.6, 0.8, 1,
+                                             0, 0.2, 0.4, 0.6, 0.8, 1),
+                            "lower_ci" = rep(0, 36),
+                            "mean_val" = rep(0, 36),
+                            "upper_ci" = rep(0, 36))
+
+
+for (i in 1:length(list_4c_ct)){
+  
+  dat <- list_4c_ct[[i]]$cases_with_control
+  mean_val <- MeanCI(dat)
+  
+  data_4c_ct$lower_ci[i] <- round(mean_val[2], 2)
+  data_4c_ct$mean_val[i] <- round(mean_val[1], 2)
+  data_4c_ct$upper_ci[i] <- round(mean_val[3], 2)
+  
+}
+
+
+# convert p_asym into chracter to you use it as a grouping variable while plotting
+data_4c_ct$p_asym <- as.character(data_4c_ct$p_asym)
+
+data_4c_ct$p_trace = data_4c_ct$p_trace * 100
+```
+
+Figure 4c: contact tracing
+
+```{r}
+fig_4c <- ggplot() +
+  geom_line(data = data_4c_ct, aes(x = p_trace, y = mean_val, group = as.factor(p_asym))) +
+  geom_point(data = data_4c_ct, aes(x = p_trace, y = mean_val, shape = as.factor(p_asym)), size = 2) +
+  geom_ribbon(data = data_4c_ct, aes(x = p_trace, ymin = lower_ci, ymax = upper_ci, group = as.factor(p_asym)), fill = "grey", alpha = 0.3) +
+  labs(x = "Contacts traced (%)",
+       y = "Average outbreak size",
+       title = "Control (contact tracing and self-isolation)",
+       shape = expression(p[asym])) +
+  scale_x_continuous(breaks = seq(0,100,20)) +
+  theme_minimal() +
+  theme(plot.title = element_text(size = 10))+
+  theme(plot.background = element_rect(fill = "white", colour = NA))
+```
+
+Figure 4
+
+```{r}
+Fig_4 <- ggarrange(fig_4a, fig_4c, 
+          labels = c("A", "B"),
+          ncol = 1,
+          heights = c(2, 2))
+
+```
+
+```{r}
+ggsave("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/Figure_formatted/Fig_4.tiff", Fig_4, dpi = 300, width = 7.47, height = 8.4, units = "in", device = "tiff", compression = "lzw")
+```

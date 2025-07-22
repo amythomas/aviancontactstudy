@@ -1,0 +1,173 @@
+---
+title: "comparing_avcos_comix"
+author: "izel"
+date: "2025-04-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+
+```{r warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork) # combine plots with arithmetic operations
+library(reshape2)
+library(fitdistrplus)
+library(DescTools) # to calculate CI for mean
+```
+
+
+```{r}
+comix <- read.csv("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/github_codes/AI_spillover_events/comix_processed_data.csv")
+avcos <- read.csv("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/github_codes/AI_spillover_events/cont_cleaned.csv")
+```
+
+```{r}
+comix_count <- comix %>% group_by(cutoff_contact) %>% tally() %>% ungroup()
+avcos_count <- avcos %>% group_by(contact_count) %>% tally() %>% ungroup()
+
+comix_count <- comix_count %>% complete(cutoff_contact = seq(0, 20, 1), fill = list(n = 0))
+avcos_count <- avcos_count %>% complete(contact_count = seq(0, 20, 1), fill = list(n = 0))
+
+# calculate probabilities
+comix_count <- comix_count %>% mutate(prob = n/sum(n))
+avcos_count <- avcos_count %>% mutate(prob = n/sum(n))
+```
+
+# Visual comparison of the probability distributions
+
+```{r}
+fig_5 <- ggplot() +
+  geom_bar(data = comix_count, aes(x = cutoff_contact, prob, fill = "CoMix"), stat = "identity", colour = "blue", alpha = 0.5) +
+  geom_bar(data = avcos_count, aes(x = contact_count, prob, fill = "AvCos"), stat = "identity", colour = "red", alpha = 0.5) +
+  scale_fill_manual(values = c("CoMix" = "skyblue",
+                               "AvCos" = "pink")
+    ) +
+  labs(x = "Number of contacts", y = "Probability", fill = "Survey") +
+  theme_minimal() + 
+  theme(plot.background = element_rect(fill = "white", colour = NA))
+```
+
+```{r}
+ggsave("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/Figure_formatted/Fig_5.tiff", fig_5, dpi = 300, width = 5.4, height = 4.2, units = "in", device = "tiff", compression = "lzw")
+```
+
+# Chi-square Test
+
+Group the number of contacts so that each bin has greater than 5 observations
+
+```{r}
+avcos <- avcos %>% mutate(grp_contact = case_when(
+  contact_count == 0 | contact_count == 1 ~ "0-1",
+  contact_count == 2 ~ "2",
+  contact_count == 3 ~ "3",
+  contact_count == 4 ~ "4",
+  contact_count == 5 ~ "5",
+  contact_count == 6 ~ "6",
+  contact_count >= 7 & contact_count <= 9 ~ "7-9",
+  contact_count >= 10 & contact_count <= 20 ~ "10-20"
+  
+))
+
+
+comix <- comix %>% mutate(grp_contact = case_when(
+  cutoff_contact == 0 | cutoff_contact == 1 ~ "0-1",
+  cutoff_contact == 2 ~ "2",
+  cutoff_contact == 3 ~ "3",
+  cutoff_contact == 4 ~ "4",
+  cutoff_contact == 5 ~ "5",
+  cutoff_contact == 6 ~ "6",
+  cutoff_contact >= 7 & cutoff_contact <= 9 ~ "7-9",
+  cutoff_contact >= 10 & cutoff_contact <= 20 ~ "10-20"
+  
+))
+```
+
+```{r}
+comix_chi <- comix %>% group_by(grp_contact) %>% tally() %>% ungroup()
+comix_chi$group <- "comix"
+
+avcos_chi <- avcos %>% group_by(grp_contact) %>% tally() %>% ungroup()
+avcos_chi$group <- "avcos"
+
+chi_data <- bind_rows(comix_chi, avcos_chi)
+
+contact_table <- xtabs(n ~ group + grp_contact, data = chi_data)
+
+```
+
+```{r}
+chisq.test(contact_table)
+```
+
+# Total Variation Distance (TVD)
+
+The total mismatch between the distributions. It is between 0 and 1. 1/2sum(abs(p-q))
+
+```{r}
+tvd <- 0.5 * sum(abs(comix_count$prob - avcos_count$prob))
+```
+
+# Use permutation test to assess the statistical significance of TVD
+
+```{r}
+# Combine and relabel
+combined <- c(avcos$contact_count, comix$cutoff_contact)
+labels <- c(rep("avcos", 197), rep("comix", 2388))
+
+calculate_tvd <- function(data_1, data_2) {
+  
+  comix_count <- as.data.frame(table(factor(data_1, levels = 0:20)))
+  avcos_count <- as.data.frame(table(factor(data_2, levels = 0:20)))
+  
+  comix_count$prob <- comix_count$Freq / sum(comix_count$Freq)
+  avcos_count$prob <- avcos_count$Freq / sum(avcos_count$Freq)
+  
+  # Create a data frame to combine the counts and probabilities
+  df_dev <- data.frame(contact = seq(0, max(comix$cutoff_contact), 1),
+                       comix = comix_count$prob,
+                       avcos = avcos_count$prob)
+  
+  
+  tvd <- 0.5 * sum(abs(df_dev$comix - df_dev$avcos))
+  return(tvd)
+}
+
+
+# Calculate observed JS divergence
+observed_tvd <-  calculate_tvd(comix$cutoff_contact, avcos$contact_count)
+
+# Permutation test
+n_perm <- 10000
+perm_tvd <- numeric(n_perm)
+
+for (i in 1:n_perm) {
+  perm_labels <- sample(labels)
+  group1 <- combined[perm_labels == "comix"]
+  group2 <- combined[perm_labels == "avcos"]
+  
+  perm_tvd[i] <- calculate_tvd(group1, group2) #  null distribution — what divergence looks like if there were no real group difference.
+ 
+}
+
+# p-value
+p_value <- mean(perm_tvd >= observed_tvd)
+
+```
+
+```{r}
+hist(perm_tvd, breaks = 50,
+     xlab = "TVD",
+     xlim = c(0, 0.35))
+abline(v = observed_tvd, col = "red", lwd = 2)
+
+```
+
+
+
+
