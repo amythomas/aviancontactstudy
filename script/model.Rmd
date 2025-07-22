@@ -1,0 +1,525 @@
+---
+title: "model"
+author: "izel"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This code creates the model.
+
+# Load packages
+
+```{r warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(patchwork) # combine plots with arithmetic operations
+library(reshape2)
+library(fitdistrplus)
+```
+
+# Create the dataframe
+
+```{r}
+n_sim <- 3000
+```
+
+```{r}
+folder_path <- "/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/github_codes/AI_spillover_events/outbreak_datasets"
+```
+
+## Create infector id, infectee id, age of infector, age of infectee and time of infection
+
+Fix the age group of the index case
+
+``` {r}
+outbreak_fn <- function(prob_matrix, size_list, mu_list, contact_list, max_time, R_0, age_groups, index_age_group) {
+  
+  
+  # Initialise the results dataframe
+  results <- data.frame(infector = integer(),
+                        infectee = integer(),
+                        repr_no = integer(),
+                        ti = integer(),
+                        time = integer(),
+                        infector_age = character(),
+                        infectee_age = character())
+  
+  current_infected <- data.frame(infector = 1, infectee = 1, time = 0, infector_age = index_age_group, infectee_age = index_age_group)
+  next_infectee <- 2 # Start tracking IDs for new infectees
+  
+  while (nrow(current_infected) > 0) { # Loop until no new infections occur
+    new_infected <- data.frame(infector = integer(),
+                               infectee = integer(),
+                               repr_no = integer(),
+                               ti = integer(),
+                               time = integer(),
+                               infector_age = character(),
+                               infectee_age = character())
+    
+    for (i in 1:nrow(current_infected)) {
+      # Get the infector's age group
+      infector_age <- current_infected$infector_age[i]
+      
+      infector_age_index <- match(infector_age, age_groups)
+      
+      # Evaluate number of secondary cases for any individual
+      infectee_age_group <- age_groups  # Possible infectee age groups
+      
+      num_sec_cases <- round(rnbinom(1, size = size_list[[infector_age_index]], mu = mu_list[[infector_age_index]]) * R_0 / 6.07)
+      
+    
+        
+      if (num_sec_cases > 0) {
+        for (l in 1:num_sec_cases) {
+          # Draw a time of infection
+          time_infection <- round(rgamma(1, shape = 13, rate = 2.0)-3)
+          overall_time <- current_infected$time[i] + time_infection
+          age_infectee <- sample(age_groups, 1, prob = prob_matrix[infector_age_index, ])
+            
+          if (overall_time <= max_time) {
+            # Add the new infection to new_infected
+            new_infected <- rbind(new_infected,
+                                    data.frame(infector = current_infected$infectee[i],
+                                               infectee = next_infectee,
+                                               repr_no = num_sec_cases,
+                                               ti = time_infection,
+                                               time = overall_time,
+                                               infector_age = current_infected$infectee_age[i],
+                                               infectee_age = age_infectee))
+            next_infectee <- next_infectee + 1 # Increment the infectee ID
+          }
+        }
+      } else {
+          # If no infection occurred, keep the infector's time the same
+          new_infected <- rbind(new_infected,
+                                data.frame(infector = current_infected$infectee[i],
+                                           infectee = NA,
+                                           repr_no = 0,
+                                           ti = NA,
+                                           time = current_infected$time[i],  # No change in time
+                                           infector_age = current_infected$infectee_age[i],
+                                           infectee_age = NA))
+          }
+      }
+    
+      # Update results
+      results <- rbind(results, new_infected)
+    
+      # Update current_infected for the next loop
+      current_infected <- new_infected[!is.na(new_infected$infectee), ]
+  }
+  
+  return(results)
+}
+```
+
+## Simulation function for the above model
+
+```{r warning=FALSE}
+simulation_fn <- function(prob_matrix, size_list, mu_list, contact_list, max_time , R_0, age_groups, n_sim = n_sim, index_age_group) {
+  all_sim_results <- list()
+  
+  for (sim in 1:n_sim) {
+    sim_results <- outbreak_fn(prob_matrix, size_list, mu_list, contact_list, max_time, R_0, age_groups, index_age_group)
+    
+    # create a new column to track simulations
+    sim_results$sim <- sim
+  
+    all_sim_results[[sim]] <- sim_results
+  }
+  
+  # combine all simulation results rowwise into a single data frame
+  outbreak_df <- do.call(rbind, all_sim_results)
+  
+  return(outbreak_df)
+}
+
+```
+
+```{r}
+age_groups <- c("0-19", "20-44", "45-59", "60+")
+
+prob_matrix <- matrix(c(0.67, 0.21, 0.075, 0.045,
+                        0.133, 0.58, 0.194, 0.093,
+                        0.15, 0.40, 0.30, 0.15,
+                        0.08, 0.39, 0.31, 0.22), nrow = 4, byrow = TRUE,
+                      dimnames = list(age_groups, age_groups))
+
+size_list <- list(1.49, 3.65, 4.46, 4.22)
+
+mu_list <- list(7.85, 4.74, 4.90, 4.17)
+
+contact_list <- list(7.85, 4.74, 4.90, 4.17)
+
+```
+
+## Add symptom status to infector and infectee
+
+```{r warning=FALSE}
+symptom_fn <- function(outbreak_df, p_asym) {
+  
+  outbreak_df$symp_infector <- character(length(outbreak_df$infector))
+  outbreak_df$symp_infectee <- character(length(outbreak_df$infector))
+  
+  for (sim in 1:n_sim) {
+    
+    # Filter the data for the current simulation
+    sim_data <- outbreak_df[outbreak_df$sim == sim, ]
+  
+    # Loop through each unique infector in the current simulation
+    infector_id <- unique(sim_data$infector)
+    
+    for (id in infector_id) {
+      
+      # Generate a random value for each row where the infector matches
+      symp_status <- runif(1)  
+    
+      # Assign the corresponding symptom status
+      sim_data$symp_infector[sim_data$infector == id] <- ifelse(symp_status > p_asym, "S", "A")
+      
+    }
+    
+    infectee_id <- unique(sim_data$infectee)
+    
+    for (iid in infectee_id) {
+      
+      if (is.na(iid)) {
+      
+        sim_data$symp_infectee[which(sim_data$infectee == iid)] <- "NA" 
+      } 
+      
+      if (iid %in% infector_id) {
+        
+        sim_data$symp_infectee[which(sim_data$infectee == iid)] <- sim_data$symp_infector[which(sim_data$infector == iid)]
+        
+      } else {
+      
+        sim_data$symp_infectee[which(sim_data$infectee == iid)] <- ifelse(runif(1) > p_asym, "S", "A")
+      }
+      
+    }
+    outbreak_df[outbreak_df$sim == sim, ] <- sim_data
+  }
+  
+  return(outbreak_df)
+}
+```
+
+## Add tracing status to outbreak_df
+
+```{r warning=FALSE}
+tracing_fn <- function(outbreak_df, p_trace) {
+  
+  outbreak_df$ct_infectee <- character(length(outbreak_df$infector))
+  outbreak_df$ct_infector <- character(length(outbreak_df$infector))
+
+  for (sim in 1:n_sim) {
+    
+    sim_data <- outbreak_df[outbreak_df$sim == sim, ]
+  
+    # Loop through each unique infector in the current simulation
+    infector_id <- unique(sim_data$infector)
+  
+    for (id in infector_id) {
+      
+      # Loop through the rows where the infector is equal to the current id
+      for (i in which(sim_data$infector == id)) {
+        
+        # Generate a random value for each occurrence of the infector in the simulation
+        contact_tracing <- runif(1)  # Random value for each row
+      
+        # Assign the corresponding contact tracing status
+        if (sim_data$repr_no[i] == 0) {
+          sim_data$ct_infectee[i] <- "Not traced"
+        } else if (sim_data$symp_infector[i] == "A") {
+          sim_data$ct_infectee[i] <- "Not traced"
+        } else if (contact_tracing > (1 - p_trace)) {
+          sim_data$ct_infectee[i] <- "Traced"
+        } else {
+          sim_data$ct_infectee[i] <- "Not traced"
+        }
+        
+      } 
+      
+      if (id == 1) {
+        sim_data$ct_infector[which(sim_data$infector == id)] <- "Not traced"
+      } else {
+      
+        sim_data$ct_infector[which(sim_data$infector == id)] <- sim_data$ct_infectee[which(sim_data$infectee == id)]
+      
+      }
+      
+    }
+    
+    outbreak_df[outbreak_df$sim == sim, ] <- sim_data
+    
+  }
+  return(outbreak_df)
+}
+```
+
+## Add isolation status (whether people would isolate or not)
+
+```{r}
+isolation_status_fn <- function(outbreak_df, p_isolate) {
+  
+  outbreak_df$isolate_infector <- character(length(outbreak_df$infector))
+  
+  for (sim in 1:n_sim) {
+    
+    sim_data <- outbreak_df[outbreak_df$sim == sim, ]
+    
+    infector_id <- unique(sim_data$infector)
+    
+    for (id in infector_id) {
+      
+      isolation_status <- runif(1)
+      
+      symptom_status <- sim_data$symp_infector[which(sim_data$infector == id)]
+      
+      sim_data$isolate_infector[which(sim_data$infector == id)] <- ifelse(symptom_status == "S" & isolation_status < p_isolate, "isolate", "not_isolate") 
+      
+    }
+    outbreak_df[outbreak_df$sim == sim, ] <- sim_data
+  }
+  return(outbreak_df)
+}
+
+```
+
+## Would infections occur under contact tracing and isolation
+
+```{r warning=FALSE}
+effect_tracing_fn <- function(outbreak_df, time_isolation) {
+  
+  outbreak_df$infected_ct <- "no"
+
+  for (sim in unique(outbreak_df$sim)) {
+  
+    sim_data <- outbreak_df[outbreak_df$sim == sim, ]
+  
+    # Loop through all infectees of infector ID = 1
+    infected_id_1 <- sim_data$infectee[which(sim_data$infector == 1)]
+  
+    for (iid in infected_id_1) {
+    
+      if (is.na(iid)) next  # Skip NA values
+    
+        # Get all rows where infector is 1
+        infector_rows <- which(sim_data$infector == 1)
+    
+        for (inf_row in infector_rows) {
+          ti_value <- sim_data$ti[inf_row]
+          isolation_status <- sim_data$isolate_infector[inf_row]
+      
+          # Apply conditions for infected_ct
+          if (isolation_status == "isolate" & ti_value < time_isolation) {
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (isolation_status == "isolate" & ti_value >= time_isolation) {
+            sim_data$infected_ct[inf_row] <- "no"
+          } else if (isolation_status == "not_isolate") {
+            sim_data$infected_ct[inf_row] <- "yes"
+          }
+        }
+    }
+  
+    # Process infectee IDs to determine their impact as infectors
+    infectee_id <- unique(sim_data$infectee)
+  
+    for (id in infectee_id) {
+    
+      if (is.na(id)) next  # Skip NA values
+    
+        # Check if the current infectee has "no" in infected_ct
+      if (sim_data$infected_ct[which(sim_data$infectee == id)] == "no") {
+        # If yes, ensure no further infections
+        sim_data$infected_ct[which(sim_data$infector == id)] <- "no"
+      } else {
+        # Process conditions for infectees acting as infectors
+        infector_rows <- which(sim_data$infector == id)
+        
+      
+        for (inf_row in infector_rows) {
+        
+          if (is.na(sim_data$infectee[inf_row])) next
+        
+            ti_value <- sim_data$ti[inf_row]
+            symp_status <- sim_data$symp_infector[inf_row]
+            ct_status <- sim_data$ct_infector[inf_row]
+            isolation_status <- sim_data$isolate_infector[inf_row]
+        
+          if (symp_status == "S" & isolation_status == "isolate" & ct_status == "Traced" & ti_value > 0) { # traced contacts isolate on the day of onset of symptoms
+            sim_data$infected_ct[inf_row] <- "no"
+          } else if (symp_status == "S" & isolation_status == "isolate" & ct_status == "Traced" & ti_value <= 0) { # they can infect people before showing symptoms
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (symp_status == "S" & isolation_status == "not_isolate" & ct_status == "Traced" & ti_value > 0) {
+            sim_data$infected_ct[inf_row] <- "no"
+          } else if (symp_status == "S" & isolation_status == "not_isolate" & ct_status == "Traced" & ti_value <= 0) {
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (symp_status == "S" & isolation_status == "isolate" & ct_status == "Not traced" & ti_value < time_isolation) { # not traced people can voluntarily isolate on day 3 (free parameter)
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (symp_status == "S" & isolation_status == "isolate" & ct_status == "Not traced" & ti_value >= time_isolation) {
+            sim_data$infected_ct[inf_row] <- "no"
+          } else if (symp_status == "S" & isolation_status == "not_isolate" & ct_status == "Not traced" & ti_value < time_isolation) {
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (symp_status == "S" & isolation_status == "not_isolate" & ct_status == "Not traced" & ti_value >= time_isolation) {
+            sim_data$infected_ct[inf_row] <- "yes"
+          } else if (symp_status == "A") {
+            sim_data$infected_ct[inf_row] <- "yes"
+          }
+        }
+      }
+    }
+  
+    # Update the dataframe
+    outbreak_df[outbreak_df$sim == sim, ] <- sim_data
+  }
+  
+  # To reorder the columns so it looks better
+  outbreak_df <- outbreak_df[, c(8, 1, 2, 3, 6, 7, 9, 10, 12, 11, 13, 4, 5, 14)]
+  
+  return(outbreak_df)
+}
+```
+
+# Analysis of model
+
+## Number of secondary cases and age group of those cases
+
+```{r}
+outbreak_size <- function(outbreak_df) {
+  
+  outbreak_size <- data.frame(sim = 1:n_sim,
+                              secondary_cases = rep(NA, n_sim),
+                              age_index_case = rep(NA, n_sim),
+                              sec_cases_0_19 = rep(NA, n_sim),
+                              sec_cases_20_44 = rep(NA, n_sim),
+                              sec_cases_45_59 = rep(NA, n_sim),
+                              sec_cases_60_plus = rep(NA, n_sim))
+
+ for (sim in unique(outbreak_df$sim)) {
+   
+   sim_data <- outbreak_df[outbreak_df$sim == sim, ]
+   
+   # id of the last infectee ignore NA
+   last_infectee <- max(sim_data$infectee, na.rm = TRUE)
+   
+   # if there were no secondary cases, last infectee would be -Inf, for those cases we are asigning the value 0
+   outbreak_size$secondary_cases[outbreak_size$sim == sim] <- ifelse(last_infectee == -Inf, 0, last_infectee - 1) # subtract 1 because we are excluding the index case (looking at secondary cases, not everyone)
+   
+   # for age groups
+   table_age_group <- table(sim_data$infectee_age)
+   
+   outbreak_size$sec_cases_0_19[outbreak_size$sim == sim] <- ifelse(is.na(table_age_group["0-19"]), 0, table_age_group["0-19"])
+   
+   outbreak_size$sec_cases_20_44[outbreak_size$sim == sim] <- ifelse(is.na(table_age_group["20-44"]), 0, table_age_group["20-44"])
+   
+   outbreak_size$sec_cases_45_59[outbreak_size$sim == sim] <- ifelse(is.na(table_age_group["45-59"]), 0, table_age_group["45-59"])
+   
+   outbreak_size$sec_cases_60_plus[outbreak_size$sim == sim] <- ifelse(is.na(table_age_group["60+"]), 0, table_age_group["60+"])
+   
+   outbreak_size$age_index_case[outbreak_size$sim == sim] <- sim_data$infector_age[which(sim_data$infector == 1)]
+ }
+ return(outbreak_size)
+}
+```
+
+## To compare the number of cases before and after contact tracing
+
+```{r warning=FALSE}
+compare_fn <- function(outbreak_df) {
+  
+  compare_ct <- data.frame(sim = 1:n_sim,
+                         cases_without_control = rep(NA, n_sim),
+                         cases_with_control = rep(NA, n_sim))
+
+  for (sim in unique(outbreak_df$sim)) {
+  
+    sim_data <- outbreak_df[outbreak_df$sim == sim,]
+    
+    max_value <- max(sim_data$infectee, na.rm = TRUE)
+    
+    compare_ct$cases_without_control[compare_ct$sim == sim] <- ifelse(max_value == -Inf, 0, (max_value - 1))
+  
+    table_ct <- table(sim_data$infected_ct)
+  
+    if (is.na(table_ct[2])) { 
+      table_ct[2] <- 0 # if there are no yes answers, it appears as NA, so assign the value 0
+      } 
+  
+    compare_ct$cases_with_control[compare_ct$sim == sim] <- table_ct[2]  
+  
+  }
+
+  # Calculate number and the percentage of prevented cases
+
+  for (i in 1:n_sim) {
+    
+    # percentage of prevented cases
+    compare_ct$prevented_cases_perc[i] <- round(100*(compare_ct$cases_without_control[i] - compare_ct$cases_with_control[i]) / (compare_ct$cases_without_control[i]), 1)
+    
+    # number of prevented cases
+    compare_ct$prevented_cases[i] <- compare_ct$cases_without_control[i] - compare_ct$cases_with_control[i]
+  
+  }
+  
+  return(compare_ct)
+}
+```
+
+## Master function for the above model
+
+```{r warning=FALSE}
+function_age <- function(p_asym, p_trace, R_0, time_isolation, index_age_group, p_isolate) {
+  set.seed(123)
+  
+  results <- outbreak_fn(prob_matrix = prob_matrix, size_list = size_list, mu_list = mu_list, contact_list = contact_list, max_time = 100, R_0 = R_0, age_groups = age_groups, index_age_group = index_age_group)
+  
+  
+  outbreak_df <- simulation_fn(prob_matrix = prob_matrix, size_list = size_list, mu_list = mu_list, contact_list = contact_list, max_time = 100, R_0 = R_0, age_groups = age_groups, n_sim = n_sim, index_age_group = index_age_group)
+  
+  outbreak_df <- symptom_fn(outbreak_df, p_asym = p_asym)
+  
+  outbreak_df <- tracing_fn(outbreak_df, p_trace = p_trace)
+  
+  outbreak_df <- isolation_status_fn(outbreak_df, p_isolate = p_isolate)
+  
+  outbreak_df <- effect_tracing_fn(outbreak_df, time_isolation = time_isolation)
+  
+  outbreak_size <- outbreak_size(outbreak_df)
+  
+  compare_ct <- compare_fn(outbreak_df)
+  
+  
+  final_results <- list(
+    outbreak_df = outbreak_df,
+    outbreak_size = outbreak_size,
+    compare_ct = compare_ct
+  )
+  
+  return(final_results)
+}
+```
+
+## Combine data frames across all age groups of index cases
+
+```{r}
+combination_function <- function(list_1, list_2, list_3) {
+  final_results_2 <- list()
+  list_1_new <- list(list_1$outbreak_df, list_2$outbreak_df, list_3$outbreak_df)
+  list_2_new <- list(list_1$outbreak_size, list_2$outbreak_size, list_3$outbreak_size)
+  list_3_new <- list(list_1$compare_ct, list_2$compare_ct, list_3$compare_ct)
+  outbreak_df <- do.call(rbind, list_1_new)
+  outbreak_size <- do.call(rbind, list_2_new)
+  compare_ct <- do.call(rbind, list_3_new)
+  
+  final_results_2 <- list(outbreak_df, outbreak_size, compare_ct)
+  
+  return(final_results_2)
+}
+```

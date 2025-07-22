@@ -1,0 +1,313 @@
+---
+title: "NB_dist"
+author: "izel"
+date: "2025-05-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This script generates the distribution of number of contacts stratified by age group.
+
+# Packages
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(patchwork)
+library(fitdistrplus)
+library(rlang)
+```
+
+# Data
+
+```{r}
+data <- read.csv("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/github_codes/AI_spillover_events/data/contact_data(Avian_Contact_Study).csv")
+```
+
+```{r}
+# regroup age of the participant
+data <- data %>%
+  mutate(age_group = case_when(age >= 19 & age <= 44 ~ "19-44",
+                   age >44 & age <=59 ~ "45-59",
+                   age > 59 ~ "60+"))
+
+data_cont <- melt(data, id.vars = c("record_id", "age_group"),
+                  measure.vars = c("sec3_q2_age1.factor", "sec3_q2_age2.factor",
+                                   "sec3_q2_age3.factor", "sec3_q2_age4.factor",
+                                   "sec3_q2_age5.factor", "sec3_q2_age6.factor",
+                                   "sec3_q2_age7.factor", "sec3_q2_age8.factor",
+                                   "sec3_q2_age9.factor", "sec3_q2_age10.factor",
+                                   "sec3_q2_age11.factor", "sec3_q2_age12.factor",
+                                   "sec3_q2_age13.factor", "sec3_q2_age14.factor",
+                                   "sec3_q2_age15.factor", "sec3_q2_age16.factor",
+                                   "sec3_q2_age17.factor", "sec3_q2_age18.factor",
+                                   "sec3_q2_age19.factor", "sec3_q2_age20.factor"),
+                  value.name = "age_contact")
+
+# regroup age of the contact
+
+data_cont <- data_cont %>%
+  mutate(age_grp_contact = case_when(age_contact == "Under 1" | age_contact == "1 - 4" | age_contact == "5 - 9" | age_contact == "10 - 14" | age_contact == "15 - 19" ~ "0-19",
+                                     age_contact == "20 - 24" | age_contact == "25 - 29" | age_contact == "30 - 34" | age_contact == "35 - 39" | age_contact == "40 - 44" ~ "20-44",
+                                     age_contact == "45 - 49" | age_contact == "50 - 54" | age_contact == "55 - 59" ~ "45-59",
+                                     age_contact == "60 - 64" | age_contact == "65 - 70" | age_contact == "70+" ~ "60+"))
+
+data_cont <- data_cont[, -c(4)]
+```
+
+# Filter data for age groups: 20-44, 45-59, 60+
+
+```{r}
+filter_20_44 <- data %>%
+  filter(age_group == "19-44")
+
+filter_45_59 <- data %>%
+  filter(age_group == "45-59")
+
+filter_60_plus <- data %>%
+  filter(age_group == "60+")
+```
+
+# Fit negative binomial distribution to 3 age groups from the Avian Contact Study
+
+## 20-44
+
+```{r}
+# Avian fit
+
+nb_fit_20_44_avian <- fitdist(filter_20_44$contact_count, "nbinom")
+
+conf_20_44 <- confint(nb_fit_20_44_avian)
+
+cnt_20_44 <- filter_20_44 %>%
+  group_by(contact_count) %>%
+  tally() %>%
+  ungroup()
+
+cnt_20_44 <- cnt_20_44 %>%
+  complete(contact_count = seq(1, 20, 1), fill = list(n = 0))
+
+cnt_20_44 <- cnt_20_44 %>%
+  mutate(n_fit = dnbinom(contact_count, size = nb_fit_20_44_avian$estimate[1], mu = nb_fit_20_44_avian$estimate[2]))
+
+cnt_20_44$n_fit <- cnt_20_44$n_fit * sum(cnt_20_44$n)
+```
+
+```{r}
+# assume size follows gamma dist and mu follows normal dist
+
+# parameters of gamma: shape and scale. mean = shape*scale, variance = shape * scale^2
+
+scale_gamma_20_44 <- nb_fit_20_44_avian$sd[1]^2/nb_fit_20_44_avian$estimate[1]
+shape_gamma_20_44 <- nb_fit_20_44_avian$estimate[1]/scale_gamma_20_44
+
+size_param_20_44 <- rgamma(1000, scale = scale_gamma_20_44, shape = shape_gamma_20_44)
+
+mu_param_20_44 <- rnorm(1000, mean = nb_fit_20_44_avian$estimate[2], sd = nb_fit_20_44_avian$sd[2])
+
+df_params_20_44 <- data.frame(sim = seq(1,1000,1),
+                        size = size_param_20_44,
+                        mu = mu_param_20_44)
+
+
+```
+
+```{r}
+new_data_20_44 <- cnt_20_44[, c(1, 2)]
+
+for (i in 1:length(df_params_20_44$sim)) {
+  
+  col_name <- paste0("n_fit_", i) 
+  
+  new_data_20_44 <- new_data_20_44 %>%
+    mutate(!!sym(col_name) := dnbinom(contact_count, size = df_params_20_44$size[i], mu = df_params_20_44$mu[i]) * sum(new_data_20_44$n)) # !!sym is used in mutate to update the column name accordingly
+  
+}
+```
+
+Plotting the results
+
+```{r}
+# First convert into long format
+
+n_fit_cols_20_44 <- grep("^n_fit_", names(new_data_20_44), value = TRUE) # extract the name of the columns that start with n_fit_
+
+new_data_long_20_44 <- melt(new_data_20_44, id.vars = "contact_count",
+                      measure.vars = n_fit_cols_20_44,
+                      variable.name = "n_fit")
+
+fig_6a <- ggplot() +
+  geom_bar(data = cnt_20_44, aes(x = contact_count, y = n), stat = "identity", fill = "skyblue", colour = "navy") +
+  geom_line(data = new_data_long_20_44, aes(x = contact_count, y = value, group = n_fit), alpha = 0.06, colour = "pink") +
+  geom_line(data = cnt_20_44, aes(x = contact_count, y = n_fit), colour = "red") +
+  geom_point(data = cnt_20_44, aes(x = contact_count, y = n_fit), colour = "red", size = 1) +
+  labs(x = "", y = "Frequency", title = "Age group: 19-44") +
+  scale_y_continuous(breaks = seq(1, max(cnt_20_44$n), 2)) +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white", colour = NA))
+```
+
+## 45-59
+
+```{r}
+nb_fit_45_59_avian <- fitdist(filter_45_59$contact_count, "nbinom")
+
+conf_45_59 <- confint(nb_fit_45_59_avian)
+
+cnt_45_59 <- filter_45_59 %>%
+  group_by(contact_count) %>%
+  tally() %>%
+  ungroup()
+
+cnt_45_59 <- cnt_45_59 %>%
+  complete(contact_count = seq(1, 20, 1), fill = list(n = 0))
+
+cnt_45_59 <- cnt_45_59 %>%
+  mutate(n_fit = dnbinom(contact_count, size = nb_fit_45_59_avian$estimate[1], mu = nb_fit_45_59_avian$estimate[2]))
+
+cnt_45_59$n_fit <- cnt_45_59$n_fit * sum(cnt_45_59$n)
+```
+
+```{r}
+# assume size follows gamma dist and mu follows normal dist
+
+# parameters of gamma: shape and scale. mean = shape*scale, variance = shape * scale^2
+
+scale_gamma_45_59 <- nb_fit_45_59_avian$sd[1]^2/nb_fit_45_59_avian$estimate[1]
+shape_gamma_45_59 <- nb_fit_45_59_avian$estimate[1]/scale_gamma_45_59
+
+size_param_45_59 <- rgamma(1000, scale = scale_gamma_45_59, shape = shape_gamma_45_59)
+
+mu_param_45_59 <- rnorm(1000, mean = nb_fit_45_59_avian$estimate[2], sd = nb_fit_45_59_avian$sd[2])
+
+df_params_45_59 <- data.frame(sim = seq(1,1000,1),
+                        size = size_param_45_59,
+                        mu = mu_param_45_59)
+
+
+```
+
+```{r}
+new_data_45_59 <- cnt_45_59[, c(1, 2)]
+
+for (i in 1:length(df_params_45_59$sim)) {
+  
+  col_name <- paste0("n_fit_", i) 
+  
+  new_data_45_59 <- new_data_45_59 %>%
+    mutate(!!sym(col_name) := dnbinom(contact_count, size = df_params_45_59$size[i], mu = df_params_45_59$mu[i]) * sum(new_data_45_59$n)) # !!sym is used in mutate to update the column name accordingly
+  
+}
+```
+
+Plotting the results
+
+```{r}
+# First convert into long format
+
+n_fit_cols_45_59 <- grep("^n_fit_", names(new_data_45_59), value = TRUE) # extract the name of the columns that start with n_fit_
+
+new_data_long_45_59 <- melt(new_data_45_59, id.vars = "contact_count",
+                      measure.vars = n_fit_cols_45_59,
+                      variable.name = "n_fit")
+
+fig_6b <- ggplot() +
+  geom_bar(data = cnt_45_59, aes(x = contact_count, y = n), stat = "identity", fill = "skyblue", colour = "navy") +
+  geom_line(data = new_data_long_45_59, aes(x = contact_count, y = value, group = n_fit), alpha = 0.06, colour = "pink") +
+  geom_line(data = cnt_45_59, aes(x = contact_count, y = n_fit), colour = "red") +
+  geom_point(data = cnt_45_59, aes(x = contact_count, y = n_fit), colour = "red", size = 1) +
+  labs(x = "Number of contacts", y = "", title = "Age group: 45-59") +
+  scale_y_continuous(breaks = seq(1, max(cnt_20_44$n), 2)) +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white", colour = NA))
+```
+
+## 60+
+
+```{r}
+nb_fit_60_plus_avian <- fitdist(filter_60_plus$contact_count, "nbinom")
+
+conf_60_plus <- confint(nb_fit_60_plus_avian)
+
+cnt_60_plus <- filter_60_plus %>%
+  group_by(contact_count) %>%
+  tally() %>%
+  ungroup()
+
+cnt_60_plus <- cnt_60_plus%>%
+  complete(contact_count = seq(1, 20, 1), fill = list(n = 0))
+
+cnt_60_plus <- cnt_60_plus %>%
+  mutate(n_fit = dnbinom(contact_count, size = nb_fit_60_plus_avian$estimate[1], mu = nb_fit_60_plus_avian$estimate[2]))
+
+cnt_60_plus$n_fit <- cnt_60_plus$n_fit * sum(cnt_60_plus$n)
+```
+
+```{r}
+# assume size follows gamma dist and mu follows normal dist
+
+# parameters of gamma: shape and scale. mean = shape*scale, variance = shape * scale^2
+
+scale_gamma_60_plus <- nb_fit_60_plus_avian$sd[1]^2/nb_fit_60_plus_avian$estimate[1]
+shape_gamma_60_plus <- nb_fit_60_plus_avian$estimate[1]/scale_gamma_60_plus
+
+size_param_60_plus <- rgamma(1000, scale = scale_gamma_60_plus, shape = shape_gamma_60_plus)
+
+mu_param_60_plus <- rnorm(1000, mean = nb_fit_60_plus_avian$estimate[2], sd = nb_fit_60_plus_avian$sd[2])
+
+df_params_60_plus <- data.frame(sim = seq(1,1000,1),
+                        size = size_param_60_plus,
+                        mu = mu_param_60_plus)
+
+
+```
+
+```{r}
+new_data_60_plus <- cnt_60_plus[, c(1, 2)]
+
+for (i in 1:length(df_params_60_plus$sim)) {
+  
+  col_name <- paste0("n_fit_", i) 
+  
+  new_data_60_plus <- new_data_60_plus %>%
+    mutate(!!sym(col_name) := dnbinom(contact_count, size = df_params_60_plus$size[i], mu = df_params_60_plus$mu[i]) * sum(new_data_60_plus$n)) # !!sym is used in mutate to update the column name accordingly
+  
+}
+```
+
+Plotting the results
+
+```{r}
+# First convert into long format
+
+n_fit_cols_60_plus <- grep("^n_fit_", names(new_data_60_plus), value = TRUE) # extract the name of the columns that start with n_fit_
+
+new_data_long_60_plus <- melt(new_data_60_plus, id.vars = "contact_count",
+                      measure.vars = n_fit_cols_60_plus,
+                      variable.name = "n_fit")
+
+fig_6c <- ggplot() +
+  geom_bar(data = cnt_60_plus, aes(x = contact_count, y = n), stat = "identity", fill = "skyblue", colour = "navy") +
+  geom_line(data = new_data_long_60_plus, aes(x = contact_count, y = value, group = n_fit), alpha = 0.06, colour = "pink") +
+  geom_line(data = cnt_60_plus, aes(x = contact_count, y = n_fit), colour = "red") +
+  geom_point(data = cnt_60_plus, aes(x = contact_count, y = n_fit), colour = "red", size = 1) +
+  labs(x = "", y = "", title = "Age group: 60+") +
+  scale_y_continuous(breaks = seq(1, max(cnt_20_44$n), 2)) +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white", colour = NA)) 
+  
+```
+
+```{r}
+fig_6 <- fig_6a + fig_6b + fig_6c
+fig_6 <- fig_6 + coord_fixed(ratio = 1.5)
+```
+
+```{r}
+ggsave("/Users/df23614/Library/CloudStorage/OneDrive-UniversityofBristol/Shared Documents - grp-HPRU-RT/Avian influenza/Contact patterns/Figure_formatted/SFig_2.tiff", fig_6, dpi = 300, width = 7.26, height = 6.9, units = "in", device = "tiff", compression = "lzw")
+```
